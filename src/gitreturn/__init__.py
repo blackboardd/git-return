@@ -99,9 +99,9 @@ def run():
         ]
 
         answers = inquirer.prompt(questions)
-        os.system(f"git config core.nextbranch {answers['branchName']}")
 
         if answers["newBranch"]:
+            os.system(f"git config core.nextbranch {answers['branchName']}")
             os.system(f"git checkout -b {answers['branchName']} &> /dev/null")
             os.system(f"git config core.lastbranch {currentBranch}")
             print(f"{bcolors.HEADER}😎 {answers['branchName']} was created successfully! Happy hacking!{bcolors.ENDC}")

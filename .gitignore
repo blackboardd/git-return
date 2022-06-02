@@ -1,3 +1,5 @@
+.gitreturn
+dist
 *.pyc
 *.egg-info
 *.bak
