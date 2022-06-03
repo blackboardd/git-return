@@ -138,10 +138,16 @@ def setup():
     open(".gitreturn", "w").write(json.dumps(answers))
 
 def run():
-    if (not exists(".gitreturn")):
+    # if git_return setup is called
+    if len(sys.argv) == 2 and sys.argv[1] == "setup":
         setup()
+        return
 
-    answers = json.loads(open(".gitreturn").read())
+    if (not exists(".gitreturn")):
+        print(f"{bcolors.FAIL}You must run `git_return setup` first.{bcolors.ENDC}")
+        sys.exit(1)
+
+    config = json.loads(open(".gitreturn").read())
 
     trelloAnswer = None
     commitizenAnswer = None
@@ -149,17 +155,30 @@ def run():
     defaultAnswer = None
     default = None
 
-    if 'trello' in answers:
-        trelloAnswer = answers['trello']
+    if 'trello' in config:
+        trelloAnswer = config['trello']
 
-    if 'commitizen' in answers:
-        commitizenAnswer = answers['commitizen']
+    if 'commitizen' in config:
+        commitizenAnswer = config['commitizen']
 
-    if 'remote' in answers:
-        remoteAnswer = answers['remote']
+    if 'remote' in config:
+        remoteAnswer = config['remote']
 
-    if 'default' in answers:
-        defaultAnswer = answers['default']
+    if 'default' in config:
+        defaultAnswer = config['default']
+
+    questions = [
+        {
+            'type': 'confirm',
+            'name': 'trello',
+            'message': 'Do you want to use Trello?',
+        },
+    ]
+
+    answers = inquirer.prompt(questions)
+
+    if not answers['trello']:
+        trelloAnswer = False
 
     if trelloAnswer:
         trello.setup()
@@ -168,10 +187,10 @@ def run():
         raise Exception(f"Script may have been stopped early. Try removing .gitreturn.")
 
     if remoteAnswer:
-        default = os.popen(f"git remote show {answers['remote']} | sed -n '/HEAD branch/s/.*: //p'").read().strip()
+        default = os.popen(f"git remote show {config['remote']} | sed -n '/HEAD branch/s/.*: //p'").read().strip()
 
     if defaultAnswer:
-        default = answers['default']
+        default = config['default']
 
     currentBranch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
     lastBranch = os.popen('git config core.lastbranch').read().strip()
@@ -215,7 +234,7 @@ def run():
         os.system(f"git config core.lastbranch {currentBranch}")
 
         print(f"{bcolors.HEADER}⏳ Bringing your packages up to date with {default}!{bcolors.ENDC}")
-        if answers["pacman"] == "npm":
+        if config["pacman"] == "npm":
             os.system("npm install")
         else:
             os.system("yarn")
