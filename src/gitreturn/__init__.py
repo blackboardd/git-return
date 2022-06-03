@@ -52,30 +52,41 @@ def run():
     lastBranch = os.popen('git config core.lastbranch').read().strip()
     nextBranch = os.popen('git config core.nextbranch').read().strip()
 
+    stash = "0"
+    list = os.popen("git stash list").read()
+    for line in list.split("\n"):
+        if "Z2l0cmV0dXJuX3N0YXNo" in line:
+            stash = list.split("\n").index(line)
+            break
+
     if "--prev" in sys.argv or "-p" in sys.argv:
             if (lastBranch and lastBranch != currentBranch):
                 print(f"{bcolors.OKGREEN}🦮 Getting your saved files...{bcolors.ENDC}")
-                os.system(f"git checkout {lastBranch} &> /dev/null")
-                os.system("git stash apply &> /dev/null")
-                print(f"{bcolors.HEADER}✨ You are the branch you made before {currentBranch}!{bcolors.ENDC}")
+                os.system(f"git checkout {lastBranch}")
+                os.system(f"git stash apply stash@{{{stash}}}")
+                print(f"{bcolors.HEADER}✨ You are in the branch you made before {currentBranch}!{bcolors.ENDC}")
             else:
                 print(f"{bcolors.WARNING}💭 No previous branch recorded.{bcolors.ENDC}")
     elif "--next" in sys.argv or "-n" in sys.argv:
             if (nextBranch and nextBranch != currentBranch):
                 print(f"{bcolors.OKGREEN}🦮 Getting your saved files...{bcolors.ENDC}")
-                os.system(f"git checkout {nextBranch} &> /dev/null")
-                os.system("git stash apply &> /dev/null")
-                print(f"{bcolors.HEADER}✨ You are the branch you made after {currentBranch}!{bcolors.ENDC}")
+                os.system(f"git checkout {nextBranch}")
+                os.system(f"git stash apply stash@{{{stash}}}")
+                print(f"{bcolors.HEADER}✨ You are in the branch you made after {currentBranch}!{bcolors.ENDC}")
             else:
                 print(f"{bcolors.WARNING}💭 No next branch recorded.{bcolors.ENDC}")
+    elif "--load" in sys.argv or "-l" in sys.argv:
+                print(f"{bcolors.OKGREEN}🦮 Getting your saved files...{bcolors.ENDC}")
+                os.system(f"git stash apply stash@{{{stash}}}")
+                print(f"{bcolors.HEADER}Saved files or last stash loaded.{bcolors.ENDC}")
     else:
         currentBranch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
 
         print(f"{bcolors.OKGREEN}💾 Saving any unstaged changes from {currentBranch}...{bcolors.ENDC}")
-        os.system(f"git stash save &> /dev/null")
+        os.system(f"git stash push -m 'Z2l0cmV0dXJuX3N0YXNo'")
         print(f"{bcolors.OKGREEN}🔍 Checking out and pulling from {default}...{bcolors.ENDC}")
-        os.system(f"git checkout {default} &> /dev/null")
-        os.system(f"git pull &> /dev/null")
+        os.system(f"git checkout {default}")
+        os.system(f"git pull")
         os.system(f"git config core.lastbranch {currentBranch}")
 
         print(f"{bcolors.HEADER}⏳ Bringing your packages up to date with {default}!{bcolors.ENDC}")
@@ -102,7 +113,7 @@ def run():
 
         if answers["newBranch"]:
             os.system(f"git config core.nextbranch {answers['branchName']}")
-            os.system(f"git checkout -b {answers['branchName']} &> /dev/null")
+            os.system(f"git checkout -b {answers['branchName']}")
             os.system(f"git config core.lastbranch {currentBranch}")
             print(f"{bcolors.HEADER}😎 {answers['branchName']} was created successfully! Happy hacking!{bcolors.ENDC}")
         else:
