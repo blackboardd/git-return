@@ -1,7 +1,7 @@
 from gitreturn import bcolors
 import requests
 import json
-import PyInquirer
+from InquirerPy import inquirer
 import sys
 import os
 
@@ -62,52 +62,23 @@ def pickCard():
     cardNames = [card['name'] for card in cards]
     cardUrls = {card['name']: card['url'] for card in cards}
 
-    # list the cards as single select questions using PyInquirer
-    # display 3 cards at a time, and ask for the next 3 cards
-    questions = [
-        {
-            'type': 'list',
-            'name': 'card',
-            'message': 'Select a card',
-            'choices': cardNames,
-            'pageSize': 3
-        }
-    ]
+    card = inquirer.fuzzy(
+        message="Select a card:",
+        choices=cardNames,
+        max_height="50%",
+    ).execute()
 
-    # ask the questions
-    cardAnswers = PyInquirer.prompt(questions)
+    print(f"{bcolors.HEADER}{card}{bcolors.ENDC}")
+    print(cardUrls[card])
 
-    print(f"{bcolors.HEADER}{cardAnswers['card']}{bcolors.ENDC}")
-    print(cardUrls[cardAnswers['card']])
+    if inquirer.confirm(
+        message="Do you want to make a branch based on this card?",
+    ).execute():
+        return cardUrls[card]
 
-    # ask the user to confirm
-    questions = [
-        {
-            'type': 'confirm',
-            'name': 'confirm',
-            'message': 'Do you want to make a branch based on this card?'
-        }
-    ]
-
-    # ask the questions
-    answers = PyInquirer.prompt(questions)
-
-    if answers['confirm']:
-        return cardUrls[cardAnswers['card']]
-
-    # ask if the user wants to quit
-    questions = [
-        {
-            'type': 'confirm',
-            'name': 'quit',
-            'message': 'Do you want to quit?'
-        }
-    ]
-
-    # ask the questions
-    answers = PyInquirer.prompt(questions)
-
-    if not answers['quit']:
+    if not inquirer.confirm(
+        message="Do you want to quit?",
+    ).execute():
         return pickCard()
 
     return None

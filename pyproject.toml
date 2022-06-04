@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gitreturn"
-version = "1.1.1"
+version = "1.1.2"
 description = "Script to return to staging."
 license = "MIT"
 authors = ["blackboardd <brightenqtompkins@gmail.com>"]
@@ -10,5 +10,5 @@ git_return = "gitreturn.cli:run"
 
 [tool.poetry.dependencies]
 python = "^3.7"
-PyInquirer = "^1.0.3"
 requests = "^2.27.1"
+inquirerpy = "^0.3.3"

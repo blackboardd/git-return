@@ -1,39 +1,32 @@
-import PyInquirer as inquirer
-from gitreturn import trello, bcolors
+from InquirerPy import inquirer
+from gitreturn import trello, strings, git, exceptions
 from os.path import exists
 import json
 import os
 import sys
 import re
-import subprocess
 
 def getCommitType(commitizen):
     if not commitizen:
         return ""
 
-    questions = [
-        {
-            'type': 'list',
-            'name': 'type',
-            'message': 'What type of commit is this?',
-            'choices': [
-                'feat',
-                'fix',
-                'chore',
-                'docs',
-                'style',
-                'refactor',
-                'perf',
-                'test',
-                'revert',
-                'WIP',
+    commit = inquirer.fuzzy(
+            message="What type of commit is this?",
+            choices=[
+                "feat",
+                "fix",
+                "docs",
+                "style",
+                "refactor",
+                "perf",
+                "test",
+                "chore",
+                "revert",
+                "WIP",
             ],
-        }
-    ]
+        ).execute()
 
-    answers = inquirer.prompt(questions)
-
-    return f"{answers['type']}/"
+    return f"{commit}/"
 
 def parseUrl(url):
     if url:
@@ -43,226 +36,201 @@ def parseUrl(url):
 
     return None
 
-def getBranchNameTrello(commitizen):
-    questions = [
-        {
-            'type': 'confirm',
-            'name': 'trello',
-            'message': 'Do you want to create a new branch from a Trello issue?',
-        },
-    ]
+def getNameTrello(commitizen):
+    url = trello.pickCard()
 
-    answers = inquirer.prompt(questions)
+    if url:
+        commitType = getCommitType(commitizen)
 
-    if answers["trello"]:
-        url = trello.pickCard()
-        if url:
-            commitType = getCommitType(commitizen)
+        print(strings.trelloBranchCreate(url))
 
-            print(f"{bcolors.OKGREEN}🔍 Creating a new branch from {bcolors.ENDC}{url}{bcolors.OKGREEN}...{bcolors.ENDC}")
+        if not parseUrl(url):
+            raise exceptions.noBranch
 
-            if not parseUrl(url):
-                raise Exception("No branch name was provided.")
+        return f"{commitType}{parseUrl(url)}"
 
-            return f"{commitType}{parseUrl(url)}"
+    raise exceptions.noCard
 
-    return getBranchName(commitizen)
+def getName(commitizen):
+    commit = getCommitType(commitizen)
 
-def getBranchName(commitizen):
-    commitType = getCommitType(commitizen)
-    questions = [
-        {
-            'type': 'input',
-            'name': 'branchName',
-            'message': 'What is the name of the new branch?',
-        },
-    ]
+    branch = inquirer.text(
+        message="What is the name of the branch?",
+    ).execute()
 
-    answers = inquirer.prompt(questions)
+    if not branch:
+        raise exceptions.noBranch
 
-    if not answers['branchName']:
-        raise Exception("No branch name was provided.")
-
-    return f"{commitType}{answers['branchName']}"
+    return f"{commit}{branch}"
 
 def setup():
-    questions = [
-        {
-            'type': 'confirm',
-            'name': 'remote',
-            'message': 'Do you have a remote?',
-        },
-        {
-            'type': 'input',
-            'name': 'remote',
-            'message': 'What remote are you on?',
-            'default': 'origin',
-            'when': lambda answers: answers['remote']
-        },
-        {
-            'type': 'input',
-            'name': 'default',
-            'message': 'What is the name of the default branch?',
-            'default': 'main',
-            'when': lambda answers: not answers['remote']
-        },
-        {
-            'type': 'list',
-            'name': 'pacman',
-            'message': 'What package manager are you using?',
-            'choices': [
-                'npm',
-                'yarn',
+    remote = None
+    default = None
+
+    setup = inquirer.select(
+        message="What do you want to do?",
+        choices=[
+            "Setup a remote",
+            "Setup a default branch",
+        ],
+    ).execute()
+
+    if setup == "Setup a remote":
+        remote = inquirer.text(
+            message="What is the remote name?",
+            default="origin",
+        ).execute()
+
+    if setup == "Setup a default branch":
+        default = inquirer.text(
+            message="What is the default branch name?",
+            default="main",
+        ).execute()
+
+    pacman = inquirer.select(
+            message="What package manager do you use?",
+            choices=[
+                "npm",
+                "yarn",
             ],
-        },
-        {
-            'type': 'confirm',
-            'name': 'trello',
-            'message': 'Do you want to use Trello?',
-            'default': False,
-        },
-        {
-            'type': 'confirm',
-            'name': 'commitizen',
-            'message': 'Do you want to use commitizen-style branches?',
-            'default': False,
-        },
-    ]
+        ).execute()
 
-    answers = inquirer.prompt(questions)
+    trello = inquirer.confirm(
+        message="Do you want to use Trello?",
+    ).execute()
 
-    answerMap = {}
-    for answer in answers:
-        answerMap[answer] = answers[answer]
+    commitizen = inquirer.confirm(
+        message="Do you want to use commitizen-style branches?",
+    ).execute()
 
-    open(".gitreturn", "w").write(json.dumps(answers))
+    config = {
+        "pacman": pacman,
+        "trello": trello,
+        "commitizen": commitizen,
+    }
+
+    if remote:
+        config["remote"] = remote 
+    else:
+        config["default"] = default
+
+    with open("config.json", "w") as f:
+        json.dump(config, f)
+
+    open(".gitreturn", "w").write(json.dumps(config))
+
+def loadConfig():
+    config = json.loads(open(".gitreturn").read())
+
+    default = None
+    trelloc = None
+    commitizenc = None
+    remotec = None
+    defaultc = None
+
+    if 'trello' in config:
+        trelloc = config['trello']
+
+    if 'commitizen' in config:
+        commitizenc = config['commitizen']
+
+    if 'remote' in config:
+        remotec = config['remote']
+
+    if 'default' in config:
+        defaultc = config['default']
+
+    pacman = config['pacman']
+
+    if not remotec and not defaultc:
+        raise exceptions.stoppedEarly
+
+    default = git.getRemote(config['remote']) if remotec else config['default']
+
+    return default, trelloc, commitizenc, pacman
+
+def move(stash, direction, current):
+    directionSpecifierBefAft = "after" if direction == "after" else "before"
+    directionSpecifierPrevNext = "after" if direction == "next" else "previous"
+    if (direction and direction != current):
+        print(strings.getSaved)
+        git.get(direction)
+        git.load(stash)
+        print(strings.beforeAfter(current, directionSpecifierBefAft))
+    else:
+        print(strings.prevNext(directionSpecifierPrevNext))
+
+def installPackages(pacman):
+    if pacman == "npm":
+        os.system("npm install")
+    else:
+        os.system("yarn")
 
 def run():
-    # if git_return setup is called
+    stash = "0"
+
     if len(sys.argv) == 2 and sys.argv[1] == "setup":
         setup()
         return
 
     if (not exists(".gitreturn")):
-        print(f"{bcolors.FAIL}You must run `git_return setup` first.{bcolors.ENDC}")
+        print(strings.noSetup)
         sys.exit(1)
 
-    config = json.loads(open(".gitreturn").read())
+    default, trelloc, commitizenc, pacman = loadConfig()
+    branch = git.Branch()
 
-    trelloAnswer = None
-    commitizenAnswer = None
-    remoteAnswer = None
-    defaultAnswer = None
-    default = None
-
-    if 'trello' in config:
-        trelloAnswer = config['trello']
-
-    if 'commitizen' in config:
-        commitizenAnswer = config['commitizen']
-
-    if 'remote' in config:
-        remoteAnswer = config['remote']
-
-    if 'default' in config:
-        defaultAnswer = config['default']
-
-    questions = [
-        {
-            'type': 'confirm',
-            'name': 'trello',
-            'message': 'Do you want to use Trello?',
-        },
-    ]
-
-    answers = inquirer.prompt(questions)
-
-    if not answers['trello']:
-        trelloAnswer = False
-
-    if trelloAnswer:
-        trello.setup()
-
-    if not remoteAnswer and not defaultAnswer:
-        raise Exception(f"Script may have been stopped early. Try removing .gitreturn.")
-
-    if remoteAnswer:
-        default = os.popen(f"git remote show {config['remote']} | sed -n '/HEAD branch/s/.*: //p'").read().strip()
-
-    if defaultAnswer:
-        default = config['default']
-
-    currentBranch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
-    lastBranch = os.popen('git config core.lastbranch').read().strip()
-    nextBranch = os.popen('git config core.nextbranch').read().strip()
-
-    stash = "0"
-    list = os.popen("git stash list").read()
+    list = git.getStashes()
     for line in list.split("\n"):
-        if "Z2l0cmV0dXJuX3N0YXNo" in line:
+        if git.stashName in line:
             stash = list.split("\n").index(line)
             break
 
     if "--prev" in sys.argv or "-p" in sys.argv:
-            if (lastBranch and lastBranch != currentBranch):
-                print(f"{bcolors.OKGREEN}🦮 Getting your saved files...{bcolors.ENDC}")
-                os.system(f"git checkout {lastBranch}")
-                os.system(f"git stash apply stash@{{{stash}}}")
-                print(f"{bcolors.HEADER}✨ You are in the branch you made before {currentBranch}!{bcolors.ENDC}")
-            else:
-                print(f"{bcolors.WARNING}💭 No previous branch recorded.{bcolors.ENDC}")
+        move(stash, "before", branch.before)
     elif "--next" in sys.argv or "-n" in sys.argv:
-            if (nextBranch and nextBranch != currentBranch):
-                print(f"{bcolors.OKGREEN}🦮 Getting your saved files...{bcolors.ENDC}")
-                os.system(f"git checkout {nextBranch}")
-                os.system(f"git stash apply stash@{{{stash}}}")
-                print(f"{bcolors.HEADER}✨ You are in the branch you made after {currentBranch}!{bcolors.ENDC}")
-            else:
-                print(f"{bcolors.WARNING}💭 No next branch recorded.{bcolors.ENDC}")
+        move(stash, "after", branch.before)
     elif "--load" in sys.argv or "-l" in sys.argv:
-                print(f"{bcolors.OKGREEN}🦮 Getting your saved files...{bcolors.ENDC}")
-                os.system(f"git stash apply stash@{{{stash}}}")
-                print(f"{bcolors.HEADER}Saved files or last stash loaded.{bcolors.ENDC}")
+                print(strings.getSaved)
+                git.load(git.stashName)
+                print(strings.savedSuccess)
     else:
-        currentBranch = os.popen("git rev-parse --abbrev-ref HEAD").read().strip()
+        if trelloc:
+            trello.setup()
 
-        print(f"{bcolors.OKGREEN}💾 Saving any unstaged changes from {currentBranch}...{bcolors.ENDC}")
-        os.system(f"git stash push -m 'Z2l0cmV0dXJuX3N0YXNo'")
-        print(f"{bcolors.OKGREEN}🔍 Checking out and pulling from {default}...{bcolors.ENDC}")
-        os.system(f"git checkout {default}")
-        os.system(f"git pull")
-        os.system(f"git config core.lastbranch {currentBranch}")
+        print(strings.saving(branch.curr))
+        git.save()
+        print(strings.checkingOut(default))
+        git.get(default)
+        git.pull()
+        git.setLast(branch.curr)
 
-        print(f"{bcolors.HEADER}⏳ Bringing your packages up to date with {default}!{bcolors.ENDC}")
-        if config["pacman"] == "npm":
-            os.system("npm install")
-        else:
-            os.system("yarn")
+        print(strings.packageUpdate)
+        installPackages(pacman)
 
-        questions = [
-            {
-                'type': 'confirm',
-                'name': 'newBranch',
-                'message': 'Do you want to create a new branch?',
-            },
-        ]
+        if inquirer.confirm(
+                message="Do you want to create a new branch?",
+            ).execute():
 
-        answers = inquirer.prompt(questions)
-
-        if answers["newBranch"]:
-            if trelloAnswer:
-                branchName = getBranchNameTrello(commitizenAnswer)
+            if trelloc and not inquirer.confirm(
+                    message="Do you want to use Trello?",
+                ).execute():
+                trelloc = False
+            if trelloc:
+                new = getNameTrello(commitizenc)
             else:
-                branchName = getBranchName(commitizenAnswer)
+                new = getName(commitizenc)
 
-            os.system(f"git config core.nextbranch {branchName}")
-            checkout = subprocess.Popen(f"git checkout -b {branchName}", stderr=subprocess.PIPE, shell=True).stderr
+            git.setNext(branch.new)
+            checkout = git.set(branch.new)
             if checkout:
                 checkout = checkout.read().decode("utf-8")
                 if "is not a valid branch name" in checkout:
-                    raise Exception("Fatal git error: Invalid branch name.")
-            os.system(f"git config core.lastbranch {currentBranch}")
-            print(f"{bcolors.HEADER}😎 {branchName} was created successfully! Happy hacking!{bcolors.ENDC}")
-        else:
-            print(f"{bcolors.HEADER}😎 Your branch is up to date! Happy hacking!{bcolors.ENDC}")
+                    raise exceptions.invalidName
+            git.setLast(branch.curr)
+            print(strings.createdSuccess(new))
+            return
+
+        print(strings.upToDate)
+        return
 
