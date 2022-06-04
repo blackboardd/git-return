@@ -4,7 +4,7 @@ import os
 upToDate = f"{bcolors.HEADER}😎 Your branch is up to date! Happy hacking!{bcolors.ENDC}"
 
 def createdSuccess(branch):
-    print(f"{bcolors.HEADER}😎 {branch} was created successfully! Happy hacking!{bcolors.ENDC}")
+    return f"{bcolors.HEADER}😎 {branch} was created successfully! Happy hacking!{bcolors.ENDC}"
 
 def checkingOut(branch):
     f"{bcolors.OKGREEN}🔍 Checking out and pulling from {branch}...{bcolors.ENDC}"

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "gitreturn"
-version = "1.2.2"
+version = "1.2.3"
 description = "Script to return to staging."
 license = "MIT"
 authors = ["blackboardd <brightenqtompkins@gmail.com>"]
