@@ -25,12 +25,13 @@ noCard = "No card was selected."
 stoppedEarly = "Script may have been stopped early. Try removing .gitreturn."
 invalidName = "Fatal git error: Invalid branch name."
 packageUpdate = f"{bcolors.HEADER}⏳ Bringing your packages up to date!{bcolors.ENDC}"
-def getSetEnvString(var, varType):
-    print(f"{bcolors.WARNING}💭 You need to set your Trello {varType} in the environment.{bcolors.ENDC}")
-    if (os.name == "nt"):
-        return f"{bcolors.WARNING}💭 You can do this by running the following command: setx {var} <{varType}>{bcolors.ENDC}"
-    else:
-        return f"{bcolors.WARNING}💭 You can do this by running the following command: export {var}=<{varType}>\n{bcolors.WARNING}You may additionally need to put this into your ~/.bashrc or ~/.zshrc file{bcolors.ENDC}"
+def setEnv(varType):
+    return f"{bcolors.WARNING}💭 You need to set your Trello {varType} in the environment.{bcolors.ENDC}"
+def setx(var, varType):
+    return f"{bcolors.WARNING}💭 You can do this by running the following command: setx {var} {varType}{bcolors.ENDC}"
+export = f"{bcolors.WARNING}💭 You can do this by adding exports to your terminal file like ~/.zshrc or ~/.bashrc:{bcolors.ENDC}"
+def envExportCommand(var, varType):
+    return f"{bcolors.OKCYAN}echo 'export {var}={varType}' >> ~/.zshrc # may need to change to ~/.bashrc\nsource ~/.zshrc{bcolors.ENDC}"
 noKeyHelp = f"{bcolors.HEADER}Don't have a key? Make one here: {bcolors.ENDC}https://trello.com/app-key{bcolors.HEADER} or request one from your organization.{bcolors.ENDC}"
 def noTokenHelp(key):
     return f"{bcolors.HEADER}Don't have a token? Get one here {bcolors.ENDC}https://trello.com/1/authorize?expiration=never&scope=read,write,account&response_type=token&name=gitreturn&key={key}"

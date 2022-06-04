@@ -196,7 +196,8 @@ def run():
                 print(strings.savedSuccess)
     else:
         if trelloc:
-            trello.setup()
+            trello.evaluateEnv("GITRETURN_TRELLO_KEY", "key")
+            trello.evaluateEnv("GITRETURN_TRELLO_TOKEN", "token")
 
         print(strings.saving(branch.curr))
         git.save()

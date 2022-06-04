@@ -5,24 +5,35 @@ from InquirerPy import inquirer
 import sys
 import os
 
-def setup():
-    try:
-        TRELLO_KEY = os.environ.get("GITRETURN_TRELLO_KEY")
-        if not TRELLO_KEY:
-            raise Exception("GITRETURN_TRELLO_KEY not set")
-    except:
-        print(strings.getSetEnvString("GITRETURN_TRELLO_KEY", "key"))
-        print(strings.noKeyHelp)
+def getAPIToken():
+    return inquirer.text(
+        message="Enter your Trello API token:",
+    ).execute()
 
-        sys.exit(1)
+def getAPIKey():
+    return inquirer.text(
+        message="Enter your Trello API key:",
+    ).execute()
+
+# 💭 You need to set your Trello key in the environment.
+# Don't have a key? Make one here: https://trello.com/app-key or request one from your organization.
+# 💭 You can do this by adding exports to your terminal file like ~/.zshrc or ~/.bashrc:
+# ? Enter your Trello API token: 
+
+def evaluateEnv(key, varType):
 
     try:
-        TRELLO_TOKEN = os.environ.get("GITRETURN_TRELLO_TOKEN")
-        if not TRELLO_TOKEN:
-            raise Exception("GITRETURN_TRELLO_TOKEN not set")
+        var = os.environ.get(key)
+        if not var:
+            raise Exception(f"{key} not set")
     except:
-        print(strings.getSetEnvString("GITRETURN_TRELLO_TOKEN", "token"))
-        print(strings.noTokenHelp(TRELLO_KEY))
+        print(strings.setEnv(varType))
+        print(strings.noKeyHelp if varType == "key" else strings.noTokenHelp(os.environ.get("GITRETURN_TRELLO_KEY")))
+        if (os.name == "nt"):
+            print(strings.setx(key, f"<{varType}>"))
+        else:
+            print(strings.export)
+            print(strings.envExportCommand(key, getAPIKey() if varType == "key" else getAPIToken()))
 
         sys.exit(1)
 
