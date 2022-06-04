@@ -43,5 +43,4 @@ class Branch:
     curr = getCurrent()
     before = getLast()
     after = getNext()
-    new = None
 

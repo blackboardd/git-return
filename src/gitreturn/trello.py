@@ -1,16 +1,9 @@
-from gitreturn import bcolors
+from gitreturn import bcolors, strings
 import requests
 import json
 from InquirerPy import inquirer
 import sys
 import os
-
-def getSetEnvString(var, varType):
-    print(f"{bcolors.WARNING}💭 You need to set your Trello {varType} in the environment.{bcolors.ENDC}")
-    if (os.name == "nt"):
-        return f"{bcolors.WARNING}💭 You can do this by running the following command: setx {var} <{varType}>{bcolors.ENDC}"
-    else:
-        return f"{bcolors.WARNING}💭 You can do this by running the following command: export {var}=<{varType}>\n{bcolors.WARNING}You may additionally need to put this into your ~/.bashrc or ~/.zshrc file{bcolors.ENDC}"
 
 def setup():
     try:
@@ -18,8 +11,8 @@ def setup():
         if not TRELLO_KEY:
             raise Exception("GITRETURN_TRELLO_KEY not set")
     except:
-        print(getSetEnvString("GITRETURN_TRELLO_KEY", "key"))
-        print(f"{bcolors.HEADER}Don't have a key? Make one here: {bcolors.ENDC}https://trello.com/app-key{bcolors.HEADER} or request one from your organization.{bcolors.ENDC}")
+        print(strings.getSetEnvString("GITRETURN_TRELLO_KEY", "key"))
+        print(strings.noKeyHelp)
 
         sys.exit(1)
 
@@ -28,8 +21,8 @@ def setup():
         if not TRELLO_TOKEN:
             raise Exception("GITRETURN_TRELLO_TOKEN not set")
     except:
-        print(getSetEnvString("GITRETURN_TRELLO_TOKEN", "token"))
-        print(f"{bcolors.HEADER}Don't have a token? Get one here {bcolors.ENDC}https://trello.com/1/authorize?expiration=never&scope=read,write,account&response_type=token&name=Server Token&key={TRELLO_KEY}")
+        print(strings.getSetEnvString("GITRETURN_TRELLO_TOKEN", "token"))
+        print(strings.noTokenHelp(TRELLO_KEY))
 
         sys.exit(1)
 

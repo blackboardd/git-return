@@ -221,16 +221,14 @@ def run():
             else:
                 new = getName(commitizenc)
 
-            git.setNext(branch.new)
-            checkout = git.set(branch.new)
+            git.setNext(new)
+            checkout = git.set(new)
             if checkout:
                 checkout = checkout.read().decode("utf-8")
                 if "is not a valid branch name" in checkout:
                     raise exceptions.invalidName
             git.setLast(branch.curr)
             print(strings.createdSuccess(new))
-            return
-
-        print(strings.upToDate)
-        return
+        else:
+            print(strings.upToDate)
 
