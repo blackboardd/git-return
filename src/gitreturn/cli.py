@@ -149,16 +149,18 @@ def loadConfig():
 
     return default, trelloc, commitizenc, pacman
 
-def move(stash, direction, current):
-    directionSpecifierBefAft = "after" if direction == "after" else "before"
-    directionSpecifierPrevNext = "after" if direction == "next" else "previous"
-    if (direction and direction != current):
+def move(stash, direction, branch):
+    beforeAfter = "after" if direction == "after" else "before"
+    prevNext = "next" if direction == "after" else "previous"
+    branchToMove = branch.after if direction == "after" else branch.before
+
+    if (direction and branchToMove != branch.curr):
         print(strings.getSaved)
-        git.get(direction)
+        git.get(branchToMove)
         git.load(stash)
-        print(strings.beforeAfter(current, directionSpecifierBefAft))
+        print(strings.beforeAfter(branchToMove, beforeAfter))
     else:
-        print(strings.prevNext(directionSpecifierPrevNext))
+        print(strings.prevNext(prevNext))
 
 def installPackages(pacman):
     if pacman == "npm":
@@ -187,9 +189,9 @@ def run():
             break
 
     if "--prev" in sys.argv or "-p" in sys.argv:
-        move(stash, "before", branch.before)
+        move(stash, "before", branch)
     elif "--next" in sys.argv or "-n" in sys.argv:
-        move(stash, "after", branch.before)
+        move(stash, "after", branch)
     elif "--load" in sys.argv or "-l" in sys.argv:
                 print(strings.getSaved)
                 git.load(git.stashName)
@@ -199,13 +201,14 @@ def run():
             trello.evaluateEnv("GITRETURN_TRELLO_KEY", "key")
             trello.evaluateEnv("GITRETURN_TRELLO_TOKEN", "token")
 
-        print(strings.saving(branch.curr))
-        git.save()
-        print(strings.checkingOut(default))
-        git.get(default)
-        git.pull()
-        git.setLast(branch.curr)
+        if (branch.curr != default):
+            print(strings.saving(branch.curr))
+            git.save()
+            print(strings.checkingOut(default))
+            git.get(default)
+            git.setLast(branch.curr)
 
+        git.pull()
         print(strings.packageUpdate)
         installPackages(pacman)
 

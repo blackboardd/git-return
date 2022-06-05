@@ -13,7 +13,7 @@ def save():
     os.system(f"git stash push -m 'Z2l0cmV0dXJuX3N0YXNo'")
 
 def load(stash):
-    os.system(f"git stash apply stash@{{{stash}}}")
+    os.system(f"git stash apply stash@{{{stash}}} &> /dev/null")
 
 def getStashes():
     return os.popen("git stash list").read()
