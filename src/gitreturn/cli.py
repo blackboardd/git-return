@@ -153,12 +153,13 @@ def move(stash, direction, branch):
     beforeAfter = "after" if direction == "after" else "before"
     prevNext = "next" if direction == "after" else "previous"
     branchToMove = branch.after if direction == "after" else branch.before
+    branchMovedFrom = branch.after if direction == "before" else branch.before
 
     if (direction and branchToMove != branch.curr):
         print(strings.getSaved)
         git.get(branchToMove)
         git.load(stash)
-        print(strings.beforeAfter(branchToMove, beforeAfter))
+        print(strings.beforeAfter(branchMovedFrom, beforeAfter))
     else:
         print(strings.prevNext(prevNext))
 
