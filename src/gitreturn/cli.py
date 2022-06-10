@@ -190,8 +190,14 @@ def run():
             break
 
     if "--prev" in sys.argv or "-p" in sys.argv:
+        if git.hasWorktree():
+            print(f"The branch that came before was {branch.before}.")
+            return
         move(stash, "before", branch)
     elif "--next" in sys.argv or "-n" in sys.argv:
+        if git.hasWorktree():
+            print(f"The branch that came after was {branch.after}.")
+            return
         move(stash, "after", branch)
     elif "--load" in sys.argv or "-l" in sys.argv:
                 print(strings.getSaved)
@@ -227,7 +233,9 @@ def run():
                 new = getName(commitizenc)
 
             git.setNext(new)
-            checkout = git.set(new)
+
+            checkout = git.setWorktree(new) if git.hasWorktree() else git.set(new)
+
             if checkout:
                 checkout = checkout.read().decode("utf-8")
                 if "is not a valid branch name" in checkout:

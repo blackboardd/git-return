@@ -1,7 +1,14 @@
+from gitreturn import format
 import os
 import subprocess
 
 stashName = "Z2l0cmV0dXJuX3N0YXNo"
+
+def hasWorktree():
+    return os.popen("git config core.gitreturnworktree").read().strip() == "true"
+
+def setWorktree(branch):
+    return subprocess.Popen(f"git worktree add ../{format.worktree(branch)} -b {branch}", stderr=subprocess.PIPE, shell=True).stderr
 
 def set(branch):
     return subprocess.Popen(f"git checkout -b {branch}", stderr=subprocess.PIPE, shell=True).stderr
